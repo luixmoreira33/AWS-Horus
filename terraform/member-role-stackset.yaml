@@ -1,0 +1,110 @@
+# StackSet / template para contas-membro: Role AtlasReadOnly
+# Deploy via CloudFormation StackSet a partir da conta central
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AtlasReadOnly role for multi-account inventory (read-only)
+
+Parameters:
+  CentralAccountId:
+    Type: String
+    Description: Account ID of the central/security account running Atlas
+  ExternalId:
+    Type: String
+    Description: ExternalId for AssumeRole (generate a strong random value)
+  RoleName:
+    Type: String
+    Default: AtlasReadOnly
+
+Resources:
+  AtlasReadOnlyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref RoleName
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${CentralAccountId}:root
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref ExternalId
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/SecurityAudit
+        - arn:aws:iam::aws:policy/job-function/ViewOnlyAccess
+      Policies:
+        - PolicyName: AtlasAdditionalReadOnly
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Resource Explorer
+              - Effect: Allow
+                Action:
+                  - resource-explorer-2:Search
+                  - resource-explorer-2:ListIndexes
+                  - resource-explorer-2:GetIndex
+                  - resource-explorer-2:ListViews
+                  - resource-explorer-2:GetView
+                Resource: '*'
+              # Config
+              - Effect: Allow
+                Action:
+                  - config:ListDiscoveredResources
+                  - config:SelectResourceConfig
+                  - config:BatchGetResourceConfig
+                  - config:GetResourceConfigHistory
+                  - config:DescribeConfigurationAggregators
+                  - config:DescribeAggregationAuthorizations
+                Resource: '*'
+              # Organizations (for discovery)
+              - Effect: Allow
+                Action:
+                  - organizations:ListAccounts
+                  - organizations:DescribeOrganization
+                  - organizations:ListRoots
+                Resource: '*'
+              # Extra for relationships (ENI, flow logs metadata, etc.) - no data
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeRouteTables
+                  - ec2:DescribeVpcs
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeFlowLogs
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                  - cloudtrail:DescribeTrails
+                  - cloudtrail:GetTrailStatus
+                  - iam:ListRoles
+                  - iam:GetRole
+                  - iam:ListAttachedRolePolicies
+                  - iam:GetRolePolicy
+                  - iam:ListRolePolicies
+                  - kms:ListKeys
+                  - kms:DescribeKey
+                  - kms:GetKeyPolicy
+                  - s3:GetBucketPolicy
+                  - s3:GetBucketLocation
+                  - sqs:GetQueueAttributes
+                  - sns:GetTopicAttributes
+                  - lambda:GetFunction
+                  - lambda:ListEventSourceMappings
+                  - rds:DescribeDBInstances
+                  - rds:DescribeDBClusters
+                Resource: '*'
+              # Explicit deny data access
+              - Effect: Deny
+                Action:
+                  - s3:GetObject
+                  - secretsmanager:GetSecretValue
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - kms:Decrypt
+                Resource: '*'
+
+Outputs:
+  RoleArn:
+    Value: !GetAtt AtlasReadOnlyRole.Arn
+    Description: ARN of the AtlasReadOnly role
