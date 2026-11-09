@@ -1,31 +1,32 @@
-# Frontend React + TypeScript + Cytoscape.js
+# Frontend AWS-Horus (React + TypeScript + Cytoscape.js)
 
-## Estrutura planejada
-```
-frontend/
-  src/
-    components/
-      GraphView.tsx       # Cytoscape / ELK hierarchical layout
-      ResourcePanel.tsx   # Painel lateral: config, vizinhos, evidências, riscos
-      Filters.tsx
-      CoverageMatrix.tsx
-      PathQuery.tsx
-    services/
-      api.ts
-    App.tsx
-  package.json
+## Setup rápido
+
+```bash
+cd frontend
+npm create vite@latest . -- --template react-ts
+npm install cytoscape cytoscape-elk @types/cytoscape
 ```
 
-## Recursos principais
+## Componentes principais
+
+- `GraphView.tsx` — Cytoscape com layout ELK hierárquico
+- `ResourcePanel.tsx` — painel lateral com vizinhos, evidências, riscos
+- `Filters.tsx` — conta, região, VPC, tipo, tag, porta, categoria, nível de evidência
+- `CoverageMatrix.tsx` — matriz de cobertura
+- `PathQuery.tsx` — “como A chega em B?”
+
+## Recursos
+
 - Zoom semântico: Org → Conta → Região → VPC → Subnet → Recurso
-- Ícones oficiais AWS por tipo
-- Cor por conta, espessura por tráfego observado
-- Estilo: tracejada = PERMITIDA, sólida = OBSERVADA
-- Clique → painel com todos os vizinhos (categoria, porta, evidência, nível)
-- Botão "mostrar tudo que se conecta" (profundidade 1-3)
-- Filtros: conta, região, VPC, tipo, tag, porta, categoria, evidência, "exposto à internet", "cross-account", "permitido mas nunca usado"
-- Busca: nome, ID, ARN, IP, tag
-- Export: PNG, SVG, JSON, Mermaid, Draw.io
-- Autenticação SSO/OIDC
+- Ícones oficiais AWS, cor por conta, espessura por tráfego
+- Tracejada = PERMITIDA, sólida = OBSERVADA
+- Painel lateral completo + filtros + busca + export
 
-O frontend consome a API e renderiza o modelo universal de arestas sem lógica específica de serviço.
+## Autenticação
+
+SSO / OIDC (Cognito ou IAM Identity Center).
+
+## Deploy
+
+Build estático → S3 + CloudFront (provisionado no Terraform).
