@@ -1,78 +1,50 @@
-# AWS-Horus
+# AWS-Horus - Produção
 
-**AWS-Horus** (evolução do conceito AWS Atlas) é uma ferramenta somente-leitura que se conecta à sua AWS Organization (conta central + todas as subcontas) e gera um diagrama interativo, atualizado quase em tempo real, mostrando **todos** os recursos e **como** eles se conectam: quem fala com quem, por qual caminho, porta/protocolo, permissão e se a conexão é apenas permitida ou realmente usada.
+## Status
 
-O modelo é **universal**. Não é específico de nenhum serviço. RDS, EC2, Lambda, S3, SQS, EKS, API Gateway, KMS, CloudFront e qualquer outro seguem o mesmo modelo de aresta. Ao clicar em qualquer recurso, você vê todos os vizinhos de entrada e saída com a evidência de cada conexão.
+Base completa da Fase 1–4 pronta para deploy e extensão.
 
-## Serviços prioritários na sua organização
+- Coletor multi-conta com backoff, paralelismo e tolerância a falhas
+- Modelo universal de aresta
+- Extratores dedicados (Lambda, S3, RDS, EC2) + template
+- Terraform (conta central + StackSet de role)
+- API FastAPI
+- Estrutura frontend React + Cytoscape
+- Documentação de deploy, operação e criação de extratores
 
-Com base no inventário atual, os extratores dedicados serão priorizados para:
+## Serviços prioritários
 
-- Elastic Compute Cloud (EC2)
-- Relational Database Service (RDS / Aurora)
-- Elastic File System (EFS)
-- Data Transfer
-- CloudFront
-- CloudWatch
-- Glue
-- Simple Storage Service (S3)
-- WAF
-- Virtual Private Cloud (VPC)
-- Managed Workflows for Apache Airflow (MWAA)
-- Elastic Load Balancing (ELB / ALB / NLB)
-- Backup
-- Config
-- Route 53
-- MQ
-- OpenSearch Service
-- Certificate Manager (ACM)
-- Database Migration Service (DMS)
-- API Gateway
-- EKS
-- ECR
+EC2, RDS/Aurora, EFS, CloudFront, CloudWatch, Glue, S3, WAF, VPC, MWAA, ELB, Backup, Config, Route 53, MQ, OpenSearch, ACM, DMS, API Gateway, EKS, ECR.
 
-Mesmo sem extrator dedicado, **todo** recurso aparece com relações genéricas (ARN, ENI, SG, role, KMS, resource policy etc.) e a marcação "cobertura parcial" na matriz.
+Todo recurso aparece mesmo sem extrator dedicado (cobertura genérica + marcação "parcial").
 
-## Arquitetura (resumo)
+## Pré-requisitos
 
-- **Inventário**: Resource Explorer (multi-account) + Config Aggregator + APIs diretas para gaps.
-- **Modelo de aresta universal**: origem/destino ARN, categoria (REDE | EVENTO/INTEGRAÇÃO | IAM | DNS | DADOS | CRIPTO | OBSERVABILIDADE | CI/CD), mecanismo, porta/protocolo, evidência, nível (DECLARADA | PERMITIDA | OBSERVADA).
-- **Atualização**: EventBridge → SQS → workers incrementais + full reconciliation periódica.
-- **Banco**: Amazon Neptune (openCypher).
-- **Interface**: React + Cytoscape.js com zoom semântico e painel lateral.
-- **Acesso**: Role `AtlasReadOnly` (SecurityAudit + ViewOnlyAccess + extras) via STS + ExternalId. Somente leitura.
+- Conta central com permissões de Organizations
+- ExternalId forte gerado
+- Resource Explorer multi-account habilitado (recomendado)
+- Config Aggregator (recomendado)
 
-## Estrutura do repositório
+## Deploy
 
-```
-├── README.md
-├── docs/
-│   ├── architecture.md
-│   ├── coverage-matrix.md
-│   └── how-to-create-extractor.md
-├── terraform/
-│   ├── main.tf
-│   ├── member-role-stackset.yaml
-│   └── event-rules-note.md
-├── collector/
-│   └── collector.py
-├── api/
-│   └── main.py
-├── frontend/
-│   └── README.md
-└── tests/
-    └── README.md
-```
+1. Ajuste variáveis em `terraform/terraform.tfvars`:
+   - `central_account_id`
+   - `external_id`
+   - `org_id`
+2. `cd terraform && terraform init && terraform apply`
+3. Deploy do StackSet (`member-role-stackset.yaml`) nas contas-membro
+4. Build e deploy do frontend no bucket S3 gerado
+5. Suba os workers ECS (task definition a partir da imagem do coletor)
 
-## Como começar
+## Operação
 
-1. Ajuste o ExternalId e o account ID central no Terraform.
-2. `cd terraform && terraform init && terraform apply` (conta central).
-3. Deploy do StackSet nas contas-membro.
-4. Configure workers e frontend.
+- Full scan: executar o coletor periodicamente ou sob demanda
+- Incremental: eventos EventBridge → SQS → workers
+- Matriz de cobertura: endpoint `/coverage` da API
+- Lacunas de Flow Logs / CloudTrail data events aparecem automaticamente
 
-Veja `docs/` para detalhes completos, matriz de cobertura e como criar novos extratores em ~30 minutos.
+## Criar novo extrator
 
----
+Ver `docs/how-to-create-extractor.md` e `collector/extractors/_template.py`.
 
-**Princípio**: um serviço novo ou raro entra no diagrama sem mudar o motor, o banco ou a interface.
+Tempo estimado: 30 minutos para um serviço novo.
