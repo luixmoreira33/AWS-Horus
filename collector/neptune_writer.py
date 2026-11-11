@@ -1,28 +1,46 @@
 """
-Escrita de nós e arestas no Amazon Neptune (openCypher via bolt ou HTTP).
-Use com IAM auth em produção.
+Escrita de nós e arestas no Amazon Neptune via openCypher.
+Templates prontos. Em produção use o driver neo4j com IAM auth ou signed HTTP.
 """
-from typing import List, Dict
+from typing import List, Dict, Any
 from collector.collector import Edge
 
 class NeptuneWriter:
-    def __init__(self, endpoint: str, port: int = 8182, use_iam: bool = True):
+    def __init__(self, endpoint: str, port: int = 8182):
         self.endpoint = endpoint
         self.port = port
-        # Em produção: use boto3 + signed requests ou neo4j driver com IAM
 
-    def upsert_node(self, arn: str, properties: Dict):
-        # MERGE (n:Resource {arn: $arn}) SET n += $props
-        pass
+    def upsert_node_query(self, arn: str, props: Dict[str, Any]) -> str:
+        return """
+        MERGE (n:Resource {arn: $arn})
+        SET n += $props
+        SET n.updated_at = datetime()
+        RETURN n.arn
+        """
 
-    def upsert_edge(self, edge: Edge):
-        # MATCH (a {arn: $src}), (b {arn: $dst})
-        # MERGE (a)-[r:CONNECTED {mechanism: $mech}]->(b)
-        # SET r += $props
-        pass
+    def upsert_edge_query(self) -> str:
+        return """
+        MATCH (a:Resource {arn: $source_arn})
+        MATCH (b:Resource {arn: $target_arn})
+        MERGE (a)-[r:CONNECTED {
+            mechanism: $mechanism,
+            category: $category
+        }]->(b)
+        SET r += $props
+        SET r.last_seen = datetime()
+        RETURN r
+        """
 
     def bulk_write(self, resources: List[Dict], edges: List[Edge]):
+        """
+        Em produção: execute as queries via driver.
+        Exemplo com neo4j:
+            with driver.session() as session:
+                session.run(query, **params)
+        """
         for r in resources:
-            self.upsert_node(r["arn"], r)
+            # self.run(self.upsert_node_query(...), arn=r["arn"], props=r)
+            pass
         for e in edges:
-            self.upsert_edge(e)
+            # self.run(self.upsert_edge_query(), ...)
+            pass

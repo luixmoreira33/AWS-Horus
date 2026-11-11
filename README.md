@@ -1,50 +1,38 @@
-# AWS-Horus - Produção
+# AWS-Horus
 
-## Status
+Ferramenta somente-leitura de inventário universal e diagrama de conectividade multi-conta para AWS Organizations.
 
-Base completa da Fase 1–4 pronta para deploy e extensão.
+## Status atual
 
-- Coletor multi-conta com backoff, paralelismo e tolerância a falhas
-- Modelo universal de aresta
-- Extratores dedicados (Lambda, S3, RDS, EC2) + template
-- Terraform (conta central + StackSet de role)
+- Coletor multi-conta com paralelismo, backoff e tolerância a falhas
+- Modelo universal de aresta (DECLARADA / PERMITIDA / OBSERVADA)
+- Extratores dedicados para os principais serviços (Lambda, S3, RDS, EC2, EKS, CloudFront, VPC, API Gateway, OpenSearch, MWAA, Glue, DMS, MQ, WAF, EFS)
+- Writer Neptune com templates openCypher
 - API FastAPI
-- Estrutura frontend React + Cytoscape
-- Documentação de deploy, operação e criação de extratores
+- Frontend React + Cytoscape (grafo, painel, filtros)
+- Terraform (conta central + StackSet da role AtlasReadOnly + regras EventBridge)
+- CLI de execução
+- Testes básicos e documentação
 
-## Serviços prioritários
+## Como rodar o coletor (local)
 
-EC2, RDS/Aurora, EFS, CloudFront, CloudWatch, Glue, S3, WAF, VPC, MWAA, ELB, Backup, Config, Route 53, MQ, OpenSearch, ACM, DMS, API Gateway, EKS, ECR.
-
-Todo recurso aparece mesmo sem extrator dedicado (cobertura genérica + marcação "parcial").
-
-## Pré-requisitos
-
-- Conta central com permissões de Organizations
-- ExternalId forte gerado
-- Resource Explorer multi-account habilitado (recomendado)
-- Config Aggregator (recomendado)
+```bash
+pip install -r requirements.txt
+export EXTERNAL_ID=seu-external-id
+python -m collector --external-id $EXTERNAL_ID --output resultado.json
+```
 
 ## Deploy
 
-1. Ajuste variáveis em `terraform/terraform.tfvars`:
-   - `central_account_id`
-   - `external_id`
-   - `org_id`
+1. Copie `terraform/terraform.tfvars.example` → `terraform.tfvars` e preencha.
 2. `cd terraform && terraform init && terraform apply`
-3. Deploy do StackSet (`member-role-stackset.yaml`) nas contas-membro
-4. Build e deploy do frontend no bucket S3 gerado
-5. Suba os workers ECS (task definition a partir da imagem do coletor)
-
-## Operação
-
-- Full scan: executar o coletor periodicamente ou sob demanda
-- Incremental: eventos EventBridge → SQS → workers
-- Matriz de cobertura: endpoint `/coverage` da API
-- Lacunas de Flow Logs / CloudTrail data events aparecem automaticamente
+3. Deploy do StackSet nas contas-membro.
+4. Configure o endpoint do Neptune no `.env`.
 
 ## Criar novo extrator
 
-Ver `docs/how-to-create-extractor.md` e `collector/extractors/_template.py`.
+Veja `docs/how-to-create-extractor.md` e `collector/extractors/_template.py`.
 
-Tempo estimado: 30 minutos para um serviço novo.
+---
+
+Repositório pronto para plugar credenciais reais e começar a coletar.
