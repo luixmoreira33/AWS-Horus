@@ -35,4 +35,4 @@ Veja `docs/how-to-create-extractor.md` e `collector/extractors/_template.py`.
 
 ---
 
-Repositório pronto para plugar credenciais reais e começar a coletar.
+
