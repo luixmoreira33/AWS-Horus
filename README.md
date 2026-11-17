@@ -1,38 +1,47 @@
 # AWS-Horus
 
-Ferramenta somente-leitura de inventário universal e diagrama de conectividade multi-conta para AWS Organizations.
+Ferramenta somente-leitura que mapeia toda a sua AWS Organization e mostra como cada recurso se conecta aos demais, com evidência.
 
-## Status atual
+## Status
+v1.0 (self-hosted) — pronto para produção.
 
-- Coletor multi-conta com paralelismo, backoff e tolerância a falhas
-- Modelo universal de aresta (DECLARADA / PERMITIDA / OBSERVADA)
-- Extratores dedicados para os principais serviços (Lambda, S3, RDS, EC2, EKS, CloudFront, VPC, API Gateway, OpenSearch, MWAA, Glue, DMS, MQ, WAF, EFS)
-- Writer Neptune com templates openCypher
-- API FastAPI
-- Frontend React + Cytoscape (grafo, painel, filtros)
-- Terraform (conta central + StackSet da role AtlasReadOnly + regras EventBridge)
-- CLI de execução
-- Testes básicos e documentação
-
-## Como rodar o coletor (local)
-
+## Quickstart
 ```bash
-pip install -r requirements.txt
+# 1. Conta central
+cd terraform && terraform init && terraform apply
+
+# 2. Role nas contas-membro (StackSet)
+# Ver terraform/member-role-stackset.yaml
+
+# 3. Coleta
 export EXTERNAL_ID=seu-external-id
-python -m collector --external-id $EXTERNAL_ID --output resultado.json
+export DATABASE_URL=postgresql://...
+python -m collector --external-id $EXTERNAL_ID
+
+# 4. API + UI
+cd api && uvicorn main:app --reload
+cd frontend && npm install && npm run dev
 ```
 
-## Deploy
+## Casos de uso
+- Quem acessa este RDS?
+- Blast radius de um Security Group
+- Recursos expostos à internet
+- Como A chega em B?
+- Diff temporal
 
-1. Copie `terraform/terraform.tfvars.example` → `terraform.tfvars` e preencha.
-2. `cd terraform && terraform init && terraform apply`
-3. Deploy do StackSet nas contas-membro.
-4. Configure o endpoint do Neptune no `.env`.
+## Modos
+- **Lite** (PostgreSQL) — barato, ideal para trial/HOM
+- **Enterprise** (Neptune) — escalável para organizações grandes
 
-## Criar novo extrator
+Controlado pela variável `DEPLOY_MODE`.
 
-Veja `docs/how-to-create-extractor.md` e `collector/extractors/_template.py`.
+## Documentação
+- [Arquitetura](docs/ARCHITECTURE.md)
+- [PRD](docs/PRD.md)
+- [Pacote Comercial](docs/COMMERCIAL.md)
+- [Segurança](docs/SECURITY.md)
+- [Matriz de Cobertura](docs/coverage-matrix.md)
 
----
-
-
+## Licença
+Self-hosted. Veja docs/COMMERCIAL.md para detalhes de licenciamento.
