@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/luixmoreira33/AWS-Horus/schemas/edge.schema.json",
+  "title": "HorusEdge",
+  "type": "object",
+  "required": ["source_arn", "target_arn", "category", "mechanism", "evidence_level"],
+  "properties": {
+    "source_arn": {"type": "string"},
+    "target_arn": {"type": "string"},
+    "direction": {"type": "string", "enum": ["in", "out", "bidirectional"]},
+    "category": {"type": "string"},
+    "mechanism": {"type": "string"},
+    "ports": {"type": "array", "items": {"type": "integer"}},
+    "protocol": {"type": "string"},
+    "evidence": {"type": "object"},
+    "evidence_level": {"type": "string", "enum": ["DECLARADA", "PERMITIDA", "OBSERVADA"]},
+    "risk": {"type": "string"},
+    "first_seen": {"type": "string", "format": "date-time"},
+    "last_seen": {"type": "string", "format": "date-time"}
+  }
+}
