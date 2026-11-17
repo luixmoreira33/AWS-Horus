@@ -5,6 +5,7 @@ Somente leitura. Modelo de aresta universal + extratores dedicados.
 import boto3
 import json
 import logging
+import re
 from typing import Dict, List, Any, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, asdict, field
@@ -14,6 +15,8 @@ import random
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("horus.collector")
+
+ARN_RE = re.compile(r"arn:aws:[a-z0-9-]+:[a-z0-9-]*:[0-9]*:[^\s\"']+")
 
 @dataclass
 class Edge:
@@ -119,8 +122,33 @@ class HorusCollector:
 
     def generic_relations(self, resource: Dict) -> List[Edge]:
         edges = []
-        # ARN/ID references, ENI, SG, role, KMS, resource-policy, tags
-        # Expandido em produção com parsing real
+        arn = resource.get("arn")
+        if not arn:
+            return edges
+        text = json.dumps(resource.get("properties", {}), default=str)
+        found = set(ARN_RE.findall(text))
+        for target in found:
+            if target == arn:
+                continue
+            category = "IAM/AUTORIZAÇÃO"
+            mechanism = "generic-arn-reference"
+            if ":kms:" in target:
+                category = "CRIPTOGRAFIA"
+                mechanism = "kms-reference"
+            elif ":iam:" in target and ":role/" in target:
+                category = "IAM/AUTORIZAÇÃO"
+                mechanism = "iam-role-reference"
+            elif ":ec2:" in target and ":security-group/" in target:
+                category = "REDE"
+                mechanism = "security-group-reference"
+            edges.append(Edge(
+                source_arn=arn,
+                target_arn=target,
+                category=category,
+                mechanism=mechanism,
+                evidence={"source": "generic-arn-scan"},
+                evidence_level="DECLARADA"
+            ))
         return edges
 
     def collect_account_region(self, account_id: str, region: str) -> Dict:
@@ -156,6 +184,3 @@ class HorusCollector:
             for fut in as_completed(futures):
                 results.append(fut.result())
         return {"results": results, "failures": self.failures, "timestamp": datetime.now(timezone.utc).isoformat()}
-
-if __name__ == "__main__":
-    print("AWS-Horus Collector ready. Configure ExternalId and register extractors.")
