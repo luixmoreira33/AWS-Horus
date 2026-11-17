@@ -9,8 +9,10 @@ import argparse
 import json
 import sys
 from collector.collector import HorusCollector
-from collector.extractors.dedicated import LambdaExtractor, S3Extractor, RDSExtractor, EC2Extractor
-from collector.extractors.priority_services import EKSExtractor, CloudFrontExtractor, VPCExtractor, APIGatewayExtractor, OpenSearchExtractor
+from collector.extractors.dedicated import LambdaExtractor
+from collector.extractors.network import SecurityGroupExtractor, VPCExtractor
+from collector.extractors.compute_data import EC2Extractor, RDSExtractor, S3Extractor
+from collector.extractors.priority_services import EKSExtractor, CloudFrontExtractor, APIGatewayExtractor, OpenSearchExtractor
 from collector.extractors.remaining_services import MWAAExtractor, GlueExtractor, DMSExtractor, MQExtractor, WAFExtractor, EFSExtractor
 
 def main():
@@ -22,10 +24,10 @@ def main():
 
     collector = HorusCollector(external_id=args.external_id)
 
-    # Registrar extratores dedicados
     for ext in [
-        LambdaExtractor(), S3Extractor(), RDSExtractor(), EC2Extractor(),
-        EKSExtractor(), CloudFrontExtractor(), VPCExtractor(), APIGatewayExtractor(), OpenSearchExtractor(),
+        SecurityGroupExtractor(), VPCExtractor(),
+        EC2Extractor(), RDSExtractor(), S3Extractor(), LambdaExtractor(),
+        EKSExtractor(), CloudFrontExtractor(), APIGatewayExtractor(), OpenSearchExtractor(),
         MWAAExtractor(), GlueExtractor(), DMSExtractor(), MQExtractor(), WAFExtractor(), EFSExtractor(),
     ]:
         collector.register_extractor(ext)
