@@ -1,38 +1,36 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
-interface EdgeInfo {
-  target?: string;
-  source?: string;
-  category: string;
-  mechanism: string;
-  evidence_level: string;
-  ports?: number[];
-  protocol?: string;
-}
+interface Props { arn: string | null }
 
-interface Props {
-  arn: string;
-  inbound: EdgeInfo[];
-  outbound: EdgeInfo[];
-  onClose: () => void;
-}
+export default function ResourcePanel({ arn }: Props) {
+  const [neighbors, setNeighbors] = useState<any>(null);
 
-export function ResourcePanel({ arn, inbound, outbound, onClose }: Props) {
+  useEffect(() => {
+    if (!arn) return;
+    // fetch(`/resources/${encodeURIComponent(arn)}/neighbors`).then(r => r.json()).then(setNeighbors);
+    setNeighbors({ inbound: [], outbound: [] });
+  }, [arn]);
+
+  if (!arn) return <div className="p-4 text-gray-500">Selecione um recurso</div>;
+
   return (
-    <div style={{ position: 'fixed', right: 0, top: 0, width: 400, height: '100%', background: '#1e1e1e', color: '#fff', padding: 16, overflowY: 'auto' }}>
-      <button onClick={onClose}>Fechar</button>
-      <h3>{arn}</h3>
-      <h4>Saída ({outbound.length})</h4>
-      {outbound.map((e, i) => (
-        <div key={i}>
-          → {e.target} | {e.category} | {e.mechanism} | {e.evidence_level}
-          {e.ports && ` | portas: ${e.ports.join(',')}`}
+    <div className="p-4 overflow-auto h-full">
+      <h2 className="text-lg font-semibold break-all mb-4">{arn.split('/').pop()}</h2>
+      <p className="text-xs text-gray-400 mb-4">{arn}</p>
+
+      <h3 className="font-medium mb-2">Entrada</h3>
+      {(neighbors?.inbound || []).map((e: any) => (
+        <div key={e.source_arn} className="text-sm mb-1 p-2 bg-gray-800 rounded">
+          <div>{e.source_arn}</div>
+          <div className="text-xs text-gray-400">{e.category} · {e.evidence_level}</div>
         </div>
       ))}
-      <h4>Entrada ({inbound.length})</h4>
-      {inbound.map((e, i) => (
-        <div key={i}>
-          ← {e.source} | {e.category} | {e.mechanism} | {e.evidence_level}
+
+      <h3 className="font-medium mt-4 mb-2">Saída</h3>
+      {(neighbors?.outbound || []).map((e: any) => (
+        <div key={e.target_arn} className="text-sm mb-1 p-2 bg-gray-800 rounded">
+          <div>{e.target_arn}</div>
+          <div className="text-xs text-gray-400">{e.category} · {e.evidence_level}</div>
         </div>
       ))}
     </div>

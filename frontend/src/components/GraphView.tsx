@@ -1,14 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import cytoscape from 'cytoscape';
-import elk from 'cytoscape-elk';
-
-cytoscape.use(elk);
 
 interface Props {
-  elements: any[];
+  selectedArn: string | null;
+  pathResult: any;
+  onNodeClick: (arn: string) => void;
 }
 
-export function GraphView({ elements }: Props) {
+export default function GraphView({ selectedArn, pathResult, onNodeClick }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
 
@@ -16,17 +15,25 @@ export function GraphView({ elements }: Props) {
     if (!containerRef.current) return;
     cyRef.current = cytoscape({
       container: containerRef.current,
-      elements,
       style: [
-        { selector: 'node', style: { 'label': 'data(label)', 'background-color': 'data(color)', 'width': 40, 'height': 40 } },
-        { selector: 'edge[evidence_level = "OBSERVADA"]', style: { 'line-style': 'solid', 'width': 'data(weight)', 'target-arrow-shape': 'triangle' } },
-        { selector: 'edge[evidence_level = "PERMITIDA"]', style: { 'line-style': 'dashed', 'target-arrow-shape': 'triangle' } },
-        { selector: 'edge', style: { 'curve-style': 'bezier' } }
+        { selector: 'node', style: { 'background-color': '#3b82f6', label: 'data(label)', 'font-size': 10 } },
+        { selector: 'edge', style: { 'line-color': '#64748b', 'target-arrow-color': '#64748b', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier' } },
+        { selector: '.highlighted', style: { 'background-color': '#f59e0b', 'line-color': '#f59e0b' } },
       ],
-      layout: { name: 'elk', elk: { algorithm: 'layered' } }
+      layout: { name: 'breadthfirst' },
     });
-    return () => cyRef.current?.destroy();
-  }, [elements]);
 
-  return <div ref={containerRef} style={{ width: '100%', height: '600px' }} />;
+    cyRef.current.on('tap', 'node', (evt) => {
+      onNodeClick(evt.target.id());
+    });
+
+    return () => cyRef.current?.destroy();
+  }, []);
+
+  useEffect(() => {
+    if (!cyRef.current || !selectedArn) return;
+    // Em produção: fetch neighbors e adicionar nós/arestas
+  }, [selectedArn]);
+
+  return <div ref={containerRef} className="w-full h-full" />;
 }

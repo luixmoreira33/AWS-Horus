@@ -1,30 +1,33 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-interface Props {
-  onFilterChange: (filters: any) => void;
-}
+interface Props { onSelect: (arn: string) => void }
 
-export function Filters({ onFilterChange }: Props) {
+export default function Filters({ onSelect }: Props) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<any[]>([]);
+
+  const search = async () => {
+    // const r = await fetch(`/search?q=${encodeURIComponent(query)}`);
+    // setResults(await r.json());
+    setResults([]);
+  };
+
   return (
-    <div style={{ padding: 8, background: '#f5f5f5' }}>
-      <select onChange={e => onFilterChange({ account: e.target.value })}>
-        <option value="">Todas as contas</option>
-      </select>
-      <select onChange={e => onFilterChange({ region: e.target.value })}>
-        <option value="">Todas as regiões</option>
-      </select>
-      <select onChange={e => onFilterChange({ category: e.target.value })}>
-        <option value="">Todas as categorias</option>
-        <option value="REDE">REDE</option>
-        <option value="IAM/AUTORIZAÇÃO">IAM</option>
-        <option value="EVENTO/INTEGRAÇÃO">EVENTO</option>
-      </select>
-      <select onChange={e => onFilterChange({ evidence: e.target.value })}>
-        <option value="">Todos os níveis</option>
-        <option value="DECLARADA">Declarada</option>
-        <option value="PERMITIDA">Permitida</option>
-        <option value="OBSERVADA">Observada</option>
-      </select>
+    <div>
+      <input
+        className="w-full bg-gray-800 p-2 rounded mb-2"
+        placeholder="Buscar por ARN ou tipo"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && search()}
+      />
+      <div className="space-y-1">
+        {results.map((r) => (
+          <button key={r.arn} className="w-full text-left text-sm p-2 hover:bg-gray-800 rounded" onClick={() => onSelect(r.arn)}>
+            {r.type}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

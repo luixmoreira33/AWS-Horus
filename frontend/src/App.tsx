@@ -1,30 +1,30 @@
 import React, { useState } from 'react';
-import { GraphView } from './components/GraphView';
-import { ResourcePanel } from './components/ResourcePanel';
-import { Filters } from './components/Filters';
-
-const sampleElements = [
-  { data: { id: 'lambda1', label: 'my-function', color: '#FF9900' } },
-  { data: { id: 'role1', label: 'lambda-role', color: '#DD344C' } },
-  { data: { id: 'e1', source: 'lambda1', target: 'role1', evidence_level: 'DECLARADA', weight: 2 } },
-];
+import GraphView from './components/GraphView';
+import ResourcePanel from './components/ResourcePanel';
+import Filters from './components/Filters';
 
 export default function App() {
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selectedArn, setSelectedArn] = useState<string | null>(null);
+  const [pathResult, setPathResult] = useState<any>(null);
 
   return (
-    <div>
-      <h1>AWS-Horus</h1>
-      <Filters onFilterChange={(f) => console.log('filters', f)} />
-      <GraphView elements={sampleElements} />
-      {selected && (
-        <ResourcePanel
-          arn={selected}
-          inbound={[]}
-          outbound={[{ target: 'role1', category: 'IAM/AUTORIZAÇÃO', mechanism: 'iam-role', evidence_level: 'DECLARADA' }]}
-          onClose={() => setSelected(null)}
-        />
-      )}
+    <div className="flex h-screen bg-gray-950 text-white">
+      <div className="w-80 border-r border-gray-800 p-4">
+        <h1 className="text-xl font-bold mb-4">AWS-Horus</h1>
+        <Filters onSelect={setSelectedArn} />
+        <div className="mt-6">
+          <h2 className="text-sm font-semibold mb-2">Como A chega em B?</h2>
+          <input className="w-full bg-gray-800 p-2 rounded mb-2" placeholder="ARN origem" />
+          <input className="w-full bg-gray-800 p-2 rounded mb-2" placeholder="ARN destino" />
+          <button className="w-full bg-blue-600 py-2 rounded">Buscar caminho</button>
+        </div>
+      </div>
+      <div className="flex-1 relative">
+        <GraphView selectedArn={selectedArn} pathResult={pathResult} onNodeClick={setSelectedArn} />
+      </div>
+      <div className="w-96 border-l border-gray-800">
+        <ResourcePanel arn={selectedArn} />
+      </div>
     </div>
   );
 }
